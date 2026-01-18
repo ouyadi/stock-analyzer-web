@@ -6,8 +6,10 @@ import remarkGfm from "remark-gfm";
 import { Search, FileDown, Loader2, AlertCircle } from "lucide-react";
 
 interface AnalysisResult {
+  ticker: string;
   analysis?: string;
-  [key: string]: unknown;
+  pdf_url: string;
+  report: string;
 }
 
 export default function Home() {
