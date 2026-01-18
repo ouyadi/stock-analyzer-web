@@ -251,7 +251,7 @@ export default function Home() {
                 <p className="text-gray-600 mb-3">AI正在生成深度投资研究报告</p>
                 <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold">
                   <Clock className="w-4 h-4" />
-                  <span>已耗时: {elapsed}秒 (预计30-60秒)</span>
+                  <span>已耗时: {elapsed}秒 (预计约60秒)</span>
                 </div>
               </div>
               
@@ -259,12 +259,12 @@ export default function Home() {
               <div className="w-full max-w-sm">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>处理进度</span>
-                  <span>{Math.min(Math.round((elapsed / 60) * 100), 90)}%</span>
+                  <span>{Math.min(Math.round((elapsed / 90) * 100), 95)}%</span>
                 </div>
                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((elapsed / 60) * 100, 90)}%` }}
+                    style={{ width: `${Math.min((elapsed / 90) * 100, 95)}%` }}
                   ></div>
                 </div>
               </div>
