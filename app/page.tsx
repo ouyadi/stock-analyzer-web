@@ -3,13 +3,21 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Search, FileDown, Loader2, AlertCircle, Clock } from "lucide-react";
+import { Search, FileDown, Loader2, AlertCircle, Clock, History, Trash2, RotateCw } from "lucide-react";
 
 interface AnalysisResult {
   ticker: string;
   analysis?: string;
   pdf_url: string;
   report: string;
+  timestamp?: number;
+}
+
+interface CachedReport {
+  ticker: string;
+  report: string;
+  pdf_url: string;
+  timestamp: number;
 }
 
 export default function Home() {
@@ -18,9 +26,32 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [recentReports, setRecentReports] = useState<CachedReport[]>([]);
+  const [cachedReport, setCachedReport] = useState<CachedReport | null>(null);
 
   // 从环境变量读取 API 地址
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://liquid-malvina-ouyadi-2b87178a.koyeb.app/analyze";
+
+  // 加载缓存的报告
+  useEffect(() => {
+    const loadCachedReports = () => {
+      try {
+        const stored = localStorage.getItem("reports");
+        if (stored) {
+          const reports: CachedReport[] = JSON.parse(stored);
+          // 筛选24小时内的报告
+          const now = Date.now();
+          const recent = reports.filter((r) => now - r.timestamp < 24 * 60 * 60 * 1000);
+          setRecentReports(recent.sort((a, b) => b.timestamp - a.timestamp));
+          // 保存回去，删除过期的
+          localStorage.setItem("reports", JSON.stringify(recent));
+        }
+      } catch (e) {
+        console.error("Failed to load cached reports:", e);
+      }
+    };
+    loadCachedReports();
+  }, []);
 
   // 计时器
   useEffect(() => {
@@ -34,13 +65,53 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [loading]);
 
-  const handleAnalyze = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // 格式化时间
+  const formatTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = Math.floor((now - timestamp) / 1000);
+    
+    if (diff < 60) return "刚刚";
+    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+    return `${Math.floor(diff / 86400)}天前`;
+  };
+
+  // 从缓存加载报告
+  const loadCachedAnalysis = (cached: CachedReport) => {
+    setResult({
+      ticker: cached.ticker,
+      report: cached.report,
+      pdf_url: cached.pdf_url,
+      timestamp: cached.timestamp,
+    });
+    setTicker(cached.ticker);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // 删除缓存报告
+  const deleteCachedReport = (tickerToDelete: string) => {
+    const updated = recentReports.filter((r) => r.ticker !== tickerToDelete);
+    setRecentReports(updated);
+    localStorage.setItem("reports", JSON.stringify(updated));
+  };
+
+  const handleAnalyze = async (e: React.FormEvent, forceNew = false) => {
+    e?.preventDefault();
     if (!ticker) return;
+
+    // 检查缓存
+    if (!forceNew) {
+      const cached = recentReports.find((r) => r.ticker === ticker);
+      if (cached) {
+        setCachedReport(cached);
+        return;
+      }
+    }
 
     setLoading(true);
     setError("");
     setResult(null);
+    setCachedReport(null);
 
     try {
       const res = await fetch(API_URL, {
@@ -56,7 +127,20 @@ export default function Home() {
       }
 
       const data = await res.json();
-      setResult(data);
+      const timestamp = Date.now();
+      const newReport: CachedReport = {
+        ticker: data.ticker,
+        report: data.report,
+        pdf_url: data.pdf_url,
+        timestamp,
+      };
+
+      // 保存到缓存
+      const updated = [newReport, ...recentReports.filter((r) => r.ticker !== data.ticker)];
+      setRecentReports(updated);
+      localStorage.setItem("reports", JSON.stringify(updated));
+
+      setResult({ ...data, timestamp });
     } catch (err: any) {
       setError(err.message || "出错了，请稍后重试");
     } finally {
@@ -114,6 +198,43 @@ export default function Home() {
         </div>
       )}
 
+      {/* Cached Report Dialog */}
+      {cachedReport && !result && (
+        <div className="max-w-xl mx-auto mb-8">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-6">
+            <div className="flex items-start gap-4">
+              <History className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  找到 {cachedReport.ticker} 的缓存报告
+                </h3>
+                <p className="text-gray-700 mb-4">
+                  创建于 <span className="font-semibold">{formatTime(cachedReport.timestamp)}</span>
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => loadCachedAnalysis(cachedReport)}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                  >
+                    使用缓存报告
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      setCachedReport(null);
+                      handleAnalyze(e, true);
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCw className="w-4 h-4" />
+                    生成新报告
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
         <div className="max-w-2xl mx-auto mb-8">
@@ -159,6 +280,57 @@ export default function Home() {
         </div>
       )}
 
+      {/* Recent Reports */}
+      {!loading && !result && recentReports.length > 0 && (
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <History className="w-6 h-6 text-blue-600" />
+              最近24小时的报告
+            </h2>
+            <p className="text-gray-600">点击快速查看之前的分析结果</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentReports.map((report) => (
+              <div
+                key={`${report.ticker}-${report.timestamp}`}
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-shadow cursor-pointer group"
+              >
+                <div
+                  onClick={() => loadCachedAnalysis(report)}
+                  className="flex-1"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        {report.ticker}
+                      </h3>
+                      <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(report.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {report.report.substring(0, 100)}...
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteCachedReport(report.ticker);
+                  }}
+                  className="mt-3 w-full px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors flex items-center justify-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  删除
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Results */}
       {result && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -167,16 +339,35 @@ export default function Home() {
             <div>
               <h2 className="text-3xl font-bold text-gray-900">{result.ticker}</h2>
               <p className="text-green-600 font-medium">分析完成</p>
+              {result.timestamp && (
+                <p className="text-sm text-gray-500 flex items-center gap-1 mt-2">
+                  <Clock className="w-4 h-4" />
+                  生成于 {formatTime(result.timestamp)}
+                </p>
+              )}
             </div>
-            <a
-              href={result.pdf_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
-            >
-              <FileDown className="w-5 h-5" />
-              下载PDF报告
-            </a>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setResult(null);
+                  setCachedReport(null);
+                  setTicker("");
+                }}
+                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-900 px-6 py-3 rounded-xl font-semibold transition-all"
+              >
+                <RotateCw className="w-5 h-5" />
+                新分析
+              </button>
+              <a
+                href={result.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+              >
+                <FileDown className="w-5 h-5" />
+                下载PDF报告
+              </a>
+            </div>
           </div>
 
           {/* Report Content */}
