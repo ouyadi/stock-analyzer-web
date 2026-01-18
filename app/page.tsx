@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Search, FileDown, Loader2, AlertCircle } from "lucide-react";
+import { Search, FileDown, Loader2, AlertCircle, Clock } from "lucide-react";
 
 interface AnalysisResult {
   ticker: string;
@@ -17,9 +17,22 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
+  const [elapsed, setElapsed] = useState(0);
 
   // 从环境变量读取 API 地址
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://liquid-malvina-ouyadi-2b87178a.koyeb.app/analyze";
+
+  // 计时器
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loading) {
+      setElapsed(0);
+      interval = setInterval(() => {
+        setElapsed((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +111,51 @@ export default function Home() {
         <div className="max-w-xl mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
           <AlertCircle className="w-5 h-5" />
           {error}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-200 p-8 animate-pulse">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">正在分析 {ticker}...</h3>
+                <p className="text-gray-600 mb-3">AI正在生成深度投资研究报告</p>
+                <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold">
+                  <Clock className="w-4 h-4" />
+                  <span>已耗时: {elapsed}秒 (预计30-60秒)</span>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full max-w-sm">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>处理进度</span>
+                  <span>{Math.min(Math.round((elapsed / 60) * 100), 90)}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((elapsed / 60) * 100, 90)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-white rounded-lg p-4 w-full border border-blue-100">
+                <p className="text-sm text-gray-700">
+                  💡 <span className="font-semibold">提示:</span> AI正在进行深度财务分析、市场趋势评估和风险评价，请耐心等待...
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
