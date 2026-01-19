@@ -129,6 +129,9 @@ export default function Home() {
       }
 
       const data = await res.json();
+      console.log("API Response:", data);
+      console.log("OI Chart URL:", data.oi_chart_url);
+      
       const timestamp = Date.now();
       const newReport: CachedReport = {
         ticker: data.ticker,
@@ -388,14 +391,22 @@ export default function Home() {
               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <span>📊</span> 持仓量(OI)分析图表
               </h3>
-              <div className="flex justify-center">
+              <div className="flex justify-center bg-gray-50 rounded-lg p-4 min-h-96">
                 <img
                   src={result.oi_chart_url}
                   alt="OI Chart - 持仓量分析"
                   className="max-w-full h-auto rounded-lg shadow-md border border-gray-200"
                   onError={(e) => {
-                    console.error("OI chart image failed to load:", e);
-                    (e.target as HTMLImageElement).style.display = "none";
+                    console.error("OI chart image failed to load. URL:", result.oi_chart_url);
+                    console.error("Error details:", e);
+                    const imgElement = e.target as HTMLImageElement;
+                    imgElement.parentElement!.innerHTML = `
+                      <div class="text-center py-8">
+                        <p class="text-red-600 font-semibold mb-2">📊 图表加载失败</p>
+                        <p class="text-gray-600 text-sm mb-3">无法加载 OI Chart 图表</p>
+                        <p class="text-gray-500 text-xs break-all">${result.oi_chart_url}</p>
+                      </div>
+                    `;
                   }}
                 />
               </div>
