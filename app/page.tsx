@@ -84,6 +84,7 @@ export default function Home() {
       ticker: cached.ticker,
       report: cached.report,
       pdf_url: cached.pdf_url,
+      oi_chart_url: cached.oi_chart_url,
       timestamp: cached.timestamp,
     });
     setTicker(cached.ticker);
