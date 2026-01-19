@@ -161,20 +161,22 @@ export default function Home() {
 
       {/* Search Box */}
       <div className="max-w-xl mx-auto mb-12">
-        <form onSubmit={handleAnalyze} className="relative flex items-center">
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="输入股票代码 (例如: TSLA, 600519)"
-            className="w-full px-6 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 focus:outline-none shadow-sm transition-all pl-14"
-            disabled={loading}
-          />
-          <Search className="absolute left-5 text-gray-400 w-6 h-6" />
+        <form onSubmit={handleAnalyze} className="flex flex-col md:flex-row gap-3 md:gap-0">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              placeholder="输入股票代码 (例如: TSLA, 600519)"
+              className="w-full px-6 py-4 text-base md:text-lg rounded-full border-2 border-gray-200 focus:border-blue-500 focus:outline-none shadow-sm transition-all pl-14"
+              disabled={loading}
+            />
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 md:w-6 md:h-6" />
+          </div>
           <button
             type="submit"
             disabled={loading || !ticker}
-            className="absolute right-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 md:rounded-l-none"
           >
             {loading ? (
               <>
