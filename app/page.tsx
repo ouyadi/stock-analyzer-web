@@ -381,7 +381,20 @@ export default function Home() {
 
           {/* Report Content */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4 text-gray-900" {...props} />,
+                h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-800 border-b pb-2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-800" {...props} />,
+                ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4 space-y-2" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4 space-y-2" {...props} />,
+                li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
+                a: ({node, ...props}) => <a className="text-blue-600 hover:underline font-medium" target="_blank" rel="noopener noreferrer" {...props} />,
+                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-200 pl-4 py-1 my-4 bg-blue-50 rounded-r italic text-gray-700" {...props} />,
+              }}
+            >
               {result.report}
             </ReactMarkdown>
           </div>
