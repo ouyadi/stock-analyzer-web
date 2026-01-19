@@ -10,6 +10,7 @@ interface AnalysisResult {
   analysis?: string;
   pdf_url: string;
   report: string;
+  oi_chart_url?: string;
   timestamp?: number;
 }
 
@@ -17,6 +18,7 @@ interface CachedReport {
   ticker: string;
   report: string;
   pdf_url: string;
+  oi_chart_url?: string;
   timestamp: number;
 }
 
@@ -132,6 +134,7 @@ export default function Home() {
         ticker: data.ticker,
         report: data.report,
         pdf_url: data.pdf_url,
+        oi_chart_url: data.oi_chart_url,
         timestamp,
       };
 
@@ -378,6 +381,29 @@ export default function Home() {
               {result.report}
             </ReactMarkdown>
           </div>
+
+          {/* OI Chart */}
+          {result.oi_chart_url && (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 md:p-12 mt-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <span>📊</span> 持仓量(OI)分析图表
+              </h3>
+              <div className="flex justify-center">
+                <img
+                  src={result.oi_chart_url}
+                  alt="OI Chart - 持仓量分析"
+                  className="max-w-full h-auto rounded-lg shadow-md border border-gray-200"
+                  onError={(e) => {
+                    console.error("OI chart image failed to load:", e);
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-4 text-center">
+                持仓量(OI)是衍生品市场中未平仓合约的数量，反映市场参与者的看涨或看跌态度
+              </p>
+            </div>
+          )}
         </div>
       )}
     </main>
